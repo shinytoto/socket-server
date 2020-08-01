@@ -8,7 +8,6 @@ export const usuariosConectados = new UsuariosLista();
 // Conectar cliente
 export const conectarClient = (client: Socket) => {
   const usuario = new Usuario(client.id);
-
   usuariosConectados.agregar(usuario);
 };
 
@@ -22,11 +21,13 @@ export const mensaje = (client: Socket, io: socketIO.Server) => {
 };
 
 // Escuchar configuración de usuario
-export const configurarUsuario = (client: Socket, io?: SocketIO.Server) => {
+export const configurarUsuario = (client: Socket, io: SocketIO.Server) => {
   client.on(
     "configurar-usuario",
     (payload: { nombre: string }, callback: CallableFunction) => {
       usuariosConectados.actualizarNombre(client.id, payload.nombre);
+
+      io.emit("usuarios-activos", usuariosConectados.getLista());
 
       // ! //
       callback({
@@ -38,10 +39,20 @@ export const configurarUsuario = (client: Socket, io?: SocketIO.Server) => {
 };
 
 // Desconectar
-export const desconectar = (client: Socket) => {
+export const desconectar = (client: Socket, io: socketIO.Server) => {
   client.on("disconnect", () => {
     console.log("Cliente desconectado.");
 
     usuariosConectados.borrarUsuario(client.id);
+
+    io.to(client.id).emit("usuarios-activos", usuariosConectados.getLista());
+  });
+};
+
+// Obtener usuarios
+
+export const obtenerUsuarios = (client: Socket, io: socketIO.Server) => {
+  client.on("obtener-usuarios", () => {
+    io.emit("usuarios-activos", usuariosConectados.getLista());
   });
 };
